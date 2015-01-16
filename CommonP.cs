@@ -20,17 +20,6 @@ using System.Collections.Generic;
 
 namespace ReBot{
 
-// enumerators 
-
-	public enum forms {
-		
-
-
-
-	}
-
-
-
 	public abstract class CommonP : CombatRotation{
 		// options
 		
@@ -71,6 +60,10 @@ namespace ReBot{
 			if (CastSelfPreventDouble("Healing Touch", () => Me.HealthFraction <= 0.5)) return true ;
 			if (CastSelf("Remove Corruption", () => Me.Auras.Any(x => x.IsDebuff && "Curse,Poison".Contains(x.DebuffType)))) return true;
 			if (CastSelf("Mark of the Wild", () => !HasAura("Mark of the Wild") && !HasAura("Blessing of Kings"))) return true ;
+			if (hasCatForm())
+			{
+				Cast("Prowl", () => !HasAura("Prowl"));
+			}
 			
 			//If Gathering is setup it will prowl around gathering and not mounting
 			if(GatheringSetup){

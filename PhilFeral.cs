@@ -5,12 +5,16 @@ using System.Diagnostics;
 using Newtonsoft.Json;
 using Geometry;
 using ReBot.API;
+using System.ComponentModel;
+using Newtonsoft.Json.Converters;
+
+
 
 
 namespace ReBot
 {
     // WoD Patch 6.0.2
-	[Rotation("PhilFeral", "Phil", WoWClass.Druid, Specialization.DruidFeral, 5, 25)]
+	[Rotation("PhilFeral", "Phil"," version: 2.0.0.15", WoWClass.Druid, Specialization.DruidFeral)]
 	public class PhilFeral : CommonP
 	{
 	
@@ -87,27 +91,31 @@ namespace ReBot
 			List<PlayerObject> members = Group.GetGroupMemberObjects();
 			//Sort the Group by Health Percent
 			List<PlayerObject> HPSort = members.OrderBy(x => x.HealthFraction).ToList();
-			//If I can Instant Cast Healing Touch
-			if (HasAura("Predatory Swiftness")) {
-				if (Me.HealthFraction < HPSort[0].HealthFraction) {
-					if (CastSelf("Healing Touch", () => Me.HealthFraction <= (HealingPercent/ 100f) && HasAura("Predatory Swiftness"))) return;
-				}else {
-					Cast("Healing Touch", () => HPSort[0].HealthFraction <= (HealingPercent/ 100f) && HasAura("Predatory Swiftness") && PvPHealing && HPSort[0].IsInCombatRangeAndLoS);
+			if (members.Count >0 && API.MapInfo.Type == MapType.Arena) {
+				//If I can Instant Cast Healing Touch
+				if (HasAura("Predatory Swiftness")) {
+					if (Me.HealthFraction < HPSort[0].HealthFraction) {
+						if (CastSelf("Healing Touch", () => Me.HealthFraction <= (HealingPercent/ 100f) && HasAura("Predatory Swiftness"))) return;
+					}else {
+						Cast("Healing Touch", () => HPSort[0].HealthFraction <= (HealingPercent/ 100f) && HasAura("Predatory Swiftness") && PvPHealing && HPSort[0].IsInCombatRangeAndLoS);
+					}
+				}
+
+				
+				//Throws Rejuvenation on all members below 90%
+				for (int i =0; i <= HPSort.Count; i++) 
+				{
+					//Removes Players that are out of Range or Dead
+					PlayerObject HealingTarget = HPSort[i];
+					if(HealingTarget.IsDead == false && HealingTarget.IsInCombatRangeAndLoS) {
+						Cast("Rejuvenation", () => HealingTarget.HealthFraction < (HealingPercent/ 100f) && !HealingTarget.HasAura("Rejuvenation"), HealingTarget);
+						Cast("Cenarion Ward", () => HealingTarget.HealthFraction <(HealingPercent/ 100f), HealingTarget);
+					}
 				}
 			}
 			if (CastSelf("Rejuvenation", () => Me.HealthFraction <= (HealingPercent/ 100f) && !HasAura("Rejuvenation") && PvPHealing)) return;
 			if (CastSelf("Cenarion Ward", () => Me.HealthFraction <= (HealingPercent/ 100f))) return;
-			
-			//Throws Rejuvenation on all members below 90%
-			for (int i =0; i <= HPSort.Count; i++) 
-			{
-				//Removes Players that are out of Range or Dead
-				PlayerObject HealingTarget = HPSort[i];
-				if(HealingTarget.IsDead == false && HealingTarget.IsInCombatRangeAndLoS) {
-					Cast("Rejuvenation", () => HealingTarget.HealthFraction < (HealingPercent/ 100f) && !HealingTarget.HasAura("Rejuvenation"));
-					Cast("Cenarion Ward", () => HealingTarget.HealthFraction <(HealingPercent/ 100f));
-				}
-			}
+			if (CastSelf("Healing Touch", () => Me.HealthFraction <= (HealingPercent/ 100f) && HasAura("Predatory Swiftness"))) return;
 			//</Healing Section!!!!>
 			
 			
@@ -123,8 +131,8 @@ namespace ReBot
 				Cast("Maim", () => Target.IsCasting && Me.ComboPoints >= 3);
 
 				//Try and prevent Rogues and Priests from going invisible
-				if (Cast("Faerie Swarm", () => Target.IsPlayer && Target.Class == WoWClass.Rogue && !Target.HasAura("Faerie Swarm"))) return;
-				if (Cast("Faerie Swarm", () => Target.IsPlayer && Target.Class == WoWClass.Priest && !Target.HasAura("Faerie Swarm"))) return;
+				//if (Cast("Faerie Swarm", () => Target.IsPlayer && Target.Class == WoWClass.Rogue && !Target.HasAura("Faerie Swarm"))) return;
+				//if (Cast("Faerie Swarm", () => Target.IsPlayer && Target.Class == WoWClass.Priest && !Target.HasAura("Faerie Swarm"))) return;
 		
 
 				if (CastSelf("Tiger's Fury", () => Me.GetPower(WoWPowerType.Energy) <=50))
