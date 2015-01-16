@@ -86,6 +86,10 @@ namespace ReBot
 		public override void Combat()
 		{
 			
+			if(Target.HealthFraction <= .50)
+			{
+				Burst();
+			}
 			//<HEALING SECTION!!!!>
 			//Get a List of all Party Members
 			List<PlayerObject> members = Group.GetGroupMemberObjects();
