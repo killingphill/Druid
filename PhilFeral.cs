@@ -30,6 +30,9 @@ namespace ReBot
 		AutoResetDelay rakeDelay = new AutoResetDelay(7000);
 		public bool mountup = false; // Has the bot not mount up
 		
+		PlayerObject[] players;
+		
+		
 		public PhilFeral()
 		{
 			GroupBuffs = new[]
@@ -54,6 +57,8 @@ namespace ReBot
 			
 		
 		}
+		
+
 
 		public bool Burst()
 		{
@@ -81,11 +86,22 @@ namespace ReBot
 		
 		}
 		
-
+	
 		
 		public override void Combat()
 		{
 			
+			if(!inArena && API.MapInfo.Type == MapType.Arena)
+			{
+				players = SetArenaTargets();
+				if(players.Length >= Arenavalue() )
+				{
+					inArena = true;
+					DebugWrite("Set Arena Targets");
+					DebugWrite(players.Length.ToString());
+				}
+			}
+		
 			if(Target.HealthFraction <= .50)
 			{
 				Burst();
@@ -107,22 +123,27 @@ namespace ReBot
 
 				
 				//Throws Rejuvenation on all members below 90%
-				for (int i =0; i <= HPSort.Count; i++) 
+				foreach(PlayerObject HealingTarget in HPSort)
+				//for (int i =0; i <= HPSort.Count; i++) 
 				{
 					//Removes Players that are out of Range or Dead
-					PlayerObject HealingTarget = HPSort[i];
+					//PlayerObject HealingTarget = HPSort[i];
 					if(HealingTarget.IsDead == false && HealingTarget.IsInCombatRangeAndLoS) {
-						Cast("Rejuvenation", () => HealingTarget.HealthFraction < (HealingPercent/ 100f) && !HealingTarget.HasAura("Rejuvenation"), HealingTarget);
-						Cast("Cenarion Ward", () => HealingTarget.HealthFraction <(HealingPercent/ 100f), HealingTarget);
+						Cast("Rejuvenation", () => HealingTarget.HealthFraction < (HealingPercent/ 100f) && !HealingTarget.HasAura("Rejuvenation") && HealingTarget.IsInCombatRangeAndLoS, HealingTarget);
+						Cast("Cenarion Ward", () => HealingTarget.HealthFraction <(HealingPercent/ 100f) && HealingTarget.IsInCombatRangeAndLoS, HealingTarget);
 					}
 				}
 			}
 			if (CastSelf("Rejuvenation", () => Me.HealthFraction <= (HealingPercent/ 100f) && !HasAura("Rejuvenation") && PvPHealing)) return;
 			if (CastSelf("Cenarion Ward", () => Me.HealthFraction <= (HealingPercent/ 100f))) return;
 			if (CastSelf("Healing Touch", () => Me.HealthFraction <= (HealingPercent/ 100f) && HasAura("Predatory Swiftness"))) return;
+			if (CastSelf("Survival Instincts", () => Me.HealthFraction <= .50 && !HasAura("Survival Instincts"))) return;
 			//</Healing Section!!!!>
 			
-			
+			if (Me.GetPower(WoWPowerType.Energy) <= 30 && Me.ComboPoints <= 4 && inArena)
+			{
+				Cyclone(players);
+			}
 			
 			// Interrupt using Mighty Bash
 			if (Cast("Mighty Bash", () => Target.CanParticipateInCombat && Target.IsCastingAndInterruptible())) return;
